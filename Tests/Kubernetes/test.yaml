@@ -1,0 +1,58 @@
+# This is my first test with Kubernetes. This file is an all in one for a deployment of an nginx website on 5 of my server, 
+# a load balance service and the ingress to access it at http://nginx1.oturcot.ca
+#
+# to make it work, I need to have a DNS entry in my DNS server that points to the Kubernetes VIP, 172.16.6.10
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      name: site-nginx-frontend
+  template:
+    metadata:
+      labels:
+        name: site-nginx-frontend
+    spec:
+      containers:
+        - name: blog
+          image: nginx:1.14.2
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: site-nginx-service
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    name: site-nginx-frontend
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: site-nginx-ingress
+  annotations:
+    #app.kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: nginx1.oturcot.ca
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: site-nginx-service
+              port:
+                number: 80
