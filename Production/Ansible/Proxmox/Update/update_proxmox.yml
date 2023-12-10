@@ -1,0 +1,12 @@
+# This yaml file launch the update playbook to update all Proxmox PVE and PBS servers simultaneously 
+# and then launch the reboot playbook to reboot the same server one at a time, if a reboot is necessary.
+
+- hosts: [proxmox_oli, proxmox_seb, pbs]
+  name: update all Proxmox PVE and PBS servers 
+  remote_user: root
+
+- name: Updates the servers all at the same time
+  ansible.builtin.import_playbook: update.yml
+
+- name: Reboot the servers one at a time, if the reboot is necessary
+  ansible.builtin.import_playbook: reboot.yml
