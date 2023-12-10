@@ -1,0 +1,31 @@
+# This playbook check run on one host at a time and only launch on the next node once it completely
+# ran on the first one. 
+# The playbook check if a reboot is necessary.  If it is not, it skips all tasks to the end.
+# If the reboot is necessary, it will reboot and once it's back online, it will wait 5 minutes before running
+# again. This is to give the server enough time to have everything back online and running smoothly.
+
+- hosts: [proxmox_oli, proxmox_seb, pbs]
+  name: update apt
+  serial: 1
+  remote_user: root
+
+  tasks:
+  - name: check for reboot required
+    register: reboot_required_file
+    stat: path=/var/run/reboot-required
+
+  - name: Reboot block
+    block:
+    - name: Reboot if kernel updated
+      reboot:
+        msg: "Reboot initiated by Ansible for kernel updates"
+        connect_timeout: 5
+        reboot_timeout: 100
+        pre_reboot_delay: 0
+        post_reboot_delay: 300
+        test_command: uptime 
+
+    - name: Wait an additional 5 minutes before proceeding to the next server
+      wait_for:
+        timeout: 300  # Adjust to wait 5 minutes (300 seconds)
+    when: reboot_required_file.stat.exists
